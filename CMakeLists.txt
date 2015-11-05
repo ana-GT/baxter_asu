@@ -13,11 +13,26 @@ find_package( gazebo REQUIRED )
 find_package( Boost REQUIRED system filesystem regex )
 find_package( Protobuf REQUIRED )
 
+# For interloper
+set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake/Modules )
+find_package( ach REQUIRED )
+find_package( sns REQUIRED )
+find_package( amino REQUIRED )
+find_package( PkgConfig )
+pkg_check_modules( EIGEN REQUIRED eigen3 )
+include_directories( ${EIGEN_INCLUDE_DIRS} )
+
+include_directories( ${ACH_INCLUDE_DIRS} )
+include_directories( ${SNS_INCLUDE_DIRS} )
+include_directories( ${AMINO_INCLUDE_DIRS} )
+
+find_package( PythonLibs REQUIRED )
+include_directories( ${PYTHON_INCLUDE_DIRS} )
 
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES baxter_asu
-#  CATKIN_DEPENDS baxter_description roscpp
+  CATKIN_DEPENDS baxter_description roscpp
 #  DEPENDS system_lib
 )
 
@@ -61,59 +76,13 @@ target_link_libraries( tutorial_transport ${GAZEBO_LIBRARIES} ${PROTOBUF_LIBRARI
 ## Declare a C++ executable
 # add_executable(baxter_asu_node src/baxter_asu_node.cpp)
 
-## Add cmake target dependencies of the executable
-## same as for the library above
-# add_dependencies(baxter_asu_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+include_directories( /home/ana/local/include/golems )
+link_directories( /home/ana/local/lib )
 
-## Specify libraries to link a library or executable target against
-# target_link_libraries(baxter_asu_node
-#   ${catkin_LIBRARIES}
-# )
+add_library( interloper SHARED src/interloper/interloper.cpp )
+target_link_libraries( interloper bimanual_msgs ${ACH_LIBRARIES} ${SNS_LIBRARIES} ${AMINO_LIBRARIES} ${roscpp_LIBRARIES} )
+set_target_properties( interloper PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/../devel/lib/python2.7/dist-packages  ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/../devel/lib/python2.7/dist-packages PREFIX "" )
 
-#############
-## Install ##
-#############
+add_executable( test_interloper_generator_gk src/interloper/test_interloper_generator_gk.cpp )
+target_link_libraries( test_interloper_generator_gk  bimanual_msgs ${ACH_LIBRARIES} ${SNS_LIBRARIES} ${AMINO_LIBRARIES} )
 
-# all install targets should use catkin DESTINATION variables
-# See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
-
-## Mark executable scripts (Python etc.) for installation
-## in contrast to setup.py, you can choose the destination
- install(PROGRAMS
-   scripts/an_1.py
-   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
- )
-
-## Mark executables and/or libraries for installation
-# install(TARGETS baxter_asu baxter_asu_node
-#   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
-
-## Mark cpp header files for installation
-# install(DIRECTORY include/${PROJECT_NAME}/
-#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#   FILES_MATCHING PATTERN "*.h"
-#   PATTERN ".svn" EXCLUDE
-# )
-
-## Mark other files for installation (e.g. launch and bag files, etc.)
-# install(FILES
-#   # myfile1
-#   # myfile2
-#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-# )
-
-#############
-## Testing ##
-#############
-
-## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_baxter_asu.cpp)
-# if(TARGET ${PROJECT_NAME}-test)
-#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
-# endif()
-
-## Add folders to be run by python nosetests
-# catkin_add_nosetests(test)

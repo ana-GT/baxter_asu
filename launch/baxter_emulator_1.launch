@@ -59,5 +59,7 @@
                                            left_joint_effort_controller
                                            right_joint_effort_controller
                                            " />  
- 
+
+<!--  <node name= "io_needed" pkg="baxter_sim_io" type="baxter_sim_io" respawn="false" />
+ -->
 </launch>

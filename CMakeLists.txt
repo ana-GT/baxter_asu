@@ -80,7 +80,7 @@ include_directories( /home/ana/local/include/golems )
 link_directories( /home/ana/local/lib )
 
 add_library( interloper SHARED src/interloper/interloper.cpp )
-target_link_libraries( interloper bimanual_msgs ${ACH_LIBRARIES} ${SNS_LIBRARIES} ${AMINO_LIBRARIES} ${roscpp_LIBRARIES} )
+target_link_libraries( interloper tkunz bimanual_msgs ${ACH_LIBRARIES} ${SNS_LIBRARIES} ${AMINO_LIBRARIES} ${roscpp_LIBRARIES} )
 set_target_properties( interloper PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/../devel/lib/python2.7/dist-packages  ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/../devel/lib/python2.7/dist-packages PREFIX "" )
 
 add_executable( test_interloper_generator_gk src/interloper/test_interloper_generator_gk.cpp )

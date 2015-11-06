@@ -24,16 +24,25 @@ class Updater:
         control_rate = rospy.Rate(100)
         bimanual_chan = ach.Channel("bimanual_chan")
         bimanual_chan.flush()
-        bimanual_msg = bytearray(10000)
+        bimanual_msg = bytearray(100000)
 
         while not rospy.is_shutdown():
             [status,framesize]  = bimanual_chan.get( bimanual_msg, wait=False, last=False )
             if status == ach.ACH_OK or status == ach.ACH_MISSED_FRAME :
-                minnie = JointTrajectory()
-                barf = interloper.readGatekeeperMsg(bimanual_msg)
-                minnie.deserialize(barf)
-                print "Min points: ", len(minnie.points)
-                print "Point 1:", minnie.points[0]
+                ml = JointTrajectory()
+                mr = JointTrajectory()
+                print "About to read msg"
+                (bl, mode, br) = interloper.readGatekeeperMsg(bimanual_msg)
+                print "Read msgs and mode: ", mode
+
+                if len(bl) > 0 :
+                    ml.deserialize(bl)
+                    print "L points: ", len(ml.points)
+                if len(br) > 0 :
+                    mr.deserialize(br)
+                    print "R points: ", len(mr.points)
+                print "Deserialized msgs"
+
             control_rate.sleep()
 
 

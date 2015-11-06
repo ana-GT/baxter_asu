@@ -5,21 +5,24 @@
 
 #include <ach.h>
 
-int main( int argc, char* argv ) {
+int main( int argc, char* argv[] ) {
 
   // Open chan
   struct sns_msg_bimanual* msg = NULL;
   int N = 7;
-  int len = 3;
   std::list<Eigen::VectorXd> path;
 
-  for( int i = 0; i < len; ++i ) {
-    Eigen::VectorXd p(N);
-    for( int j = 0; j < N; ++j ) {
-      p(j) = 0.125*j;
-    }
-    path.push_back(p);
-  }
+  // Relleno de 3 points
+  Eigen::VectorXd p(N);
+  p << 0, 0, 0, 0, 0, 0, 0;
+  path.push_back(p);
+  p << -0.11, -0.62, -1.15, 1.32, 0.80, 1.27, 2.39;
+  path.push_back(p);
+  p = p*0.75;
+  path.push_back(p);
+  p = p*1.67;
+  //path.push_back(p);
+
   msg = sns_msg_bimanual_alloc( path.size(), 0, 
 				N );
   int counter = 0;
@@ -42,10 +45,11 @@ int main( int argc, char* argv ) {
   while(true) {
     
     // Send message
+    msg->mode = 1 - msg->mode;
     r = ach_put( &chan, msg, sns_msg_bimanual_size(msg) );
     if( r != ACH_OK ) { printf("Error sending message \n"); }
     // Sleep
-    usleep(0.1*1e6);
+    usleep(0.5*1e6);
   }
 
   return 0;

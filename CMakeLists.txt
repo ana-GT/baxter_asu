@@ -7,11 +7,14 @@ project(baxter_asu)
 find_package(catkin REQUIRED COMPONENTS
   baxter_description
   roscpp
+  cv_bridge
 )
 
 find_package( gazebo REQUIRED )
 find_package( Boost REQUIRED system filesystem regex )
 find_package( Protobuf REQUIRED )
+find_package( OpenCV )
+include_directories( ${OpenCV_INCLUDE_DIRS} )
 
 # For interloper
 set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake/Modules )
@@ -74,7 +77,9 @@ target_link_libraries( tutorial_transport ${GAZEBO_LIBRARIES} ${PROTOBUF_LIBRARI
 # add_dependencies(baxter_asu ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-# add_executable(baxter_asu_node src/baxter_asu_node.cpp)
+add_executable(view_kinect_mode src/view_kinect_node.cpp)
+target_link_libraries( view_kinect_mode ${OpenCV_LIBRARIES} ${catkin_LIBRARIES} )
+
 
 include_directories( /home/ana/local/include/golems )
 link_directories( /home/ana/local/lib )

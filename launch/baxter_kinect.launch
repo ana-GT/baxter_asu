@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<launch>
+
+  <!-- Arguments to launch file -->
+  <arg name="paused" default="true" />
+  <arg name="use_sim_time" default="true" />
+  <arg name="gui" default="true" />
+  <arg name="headless" default="false" />
+  <arg name="debug" default="false" />
+
+  <!-- Load world file -->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find baxter_asu)/worlds/baxter_kinect.world" />
+    <arg name="debug" value="$(arg debug)" />
+    <arg name="gui" value="$(arg gui)" />
+    <arg name="paused" value="$(arg paused)" />
+    <arg name="use_sim_time" value="$(arg use_sim_time)" />
+    <arg name="headless" value="$(arg headless)" />
+  </include>
+
+  <!-- Load the URDF -->
+<!--  <param name="robot_description" 
+         command="cat '$(find baxter_description)/urdf/baxter.urdf'" /> -->
+
+  <!-- Load the software version into the ROS parameters server -->
+<!--  <param name="rethink/software_version" value="1.1.1" /> -->
+
+  <!-- Publish a static transform between the world and the base of the robot -->
+
+
+  <!-- Run a python script to send a service call to gazebo_ros to spawn a URDF robot -->
+<!--  <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+        args="-file $(find baxter_description)/urdf/baxter.urdf -urdf -z 0.93 -model baxter" /> -->
+
+
+  <!-- Load the kinematics -->
+<!--  <include file="$(find baxter_sim_kinematics)/launch/baxter_sim_kinematics.launch" /> -->
+
+  <!-- Load the joint controller configurations from YAML file to parameter server -->
+<!--  <rosparam file="$(find baxter_sim_hardware)/config/baxter_sim_controllers.yaml" command="load" /> -->
+
+  <!-- Load the baxter_sim_hardware node -->
+<!--  <node name="baxter_emulator" pkg="baxter_sim_hardware" type="baxter_emulator" respawn="false"
+        output="screen" args="$(find baxter_sim_hardware)/images/researchsdk.png" /> -->
+
+
+  <!-- load the default controllers -->
+<!--  <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
+        output="screen" ns="/robot" args="joint_state_controller" /> -->
+
+  <!-- load the stopped controllers -->
+<!-- Add from baxter.world-->
+
+
+<!--  <node name= "io_needed" pkg="baxter_sim_io" type="baxter_sim_io" respawn="false" />
+ -->
+</launch>

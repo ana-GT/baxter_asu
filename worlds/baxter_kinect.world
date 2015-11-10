@@ -1,0 +1,31 @@
+<?xml version='1.0'?>
+<sdf version ='1.4'>
+  <world name='default'>
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+    
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <include>
+      <uri>model://cafe_table</uri>
+      <pose>0 0 0 0 0 0</pose>
+      <static>true</static>
+    </include>
+
+    <include>
+      <uri>model://beer</uri>
+      <pose>0.16 0 0.78 0 0 0</pose>
+    </include>
+
+
+    <include>
+      <uri>model://custom_kinect</uri>
+      <pose>-0.20 0 1.4 0 0.78 0</pose>
+      <static>true</static>
+    </include>
+
+  </world>
+</sdf>

@@ -114,7 +114,7 @@ class Updater:
         self._limbs = ('left', 'right')
         self._arms = { 'left': baxter_interface.Limb('left'),
                        'right': baxter_interface.Limb('right') }
-        
+        self._hands = { 'left': baxter_interface.Gripper('left') }        
 
     def clean_shutdown(self):
         "Not sure what was here"
@@ -127,8 +127,11 @@ class Updater:
         control_rate = rospy.Rate(100)
         
         bimanual_chan = ach.Channel("bimanual_chan")
+        bimanual_hand_chan = ach.Channel("bimanual_hand_chan")
         bimanual_chan.flush()
+        bimanual_hand_chan.flush()
         bimanual_msg = bytearray(100000)
+        bimanual_hand_msg = bytearray(100000)
         jt_msg_left = JointTrajectory()
 	jt_msg_right = JointTrajectory()
         
@@ -140,8 +143,15 @@ class Updater:
             pr = [ self._arms['right']._joint_angle[i] for i in self._arms['right']._joint_names['right'] ]
             vr = [ self._arms['right']._joint_velocity[i] for i in self._arms['right']._joint_names['right'] ]
 
+            # Grab hand state and send it to robot
+            hl = self._hands['left'].position()*(1.0/4000.0) # Mapping 0-100 to 0-0.025cm
+            hr = 0 
+
             interloper.sendArmStates( np.asarray(pl), np.asarray(vl), 'state-left' )
             interloper.sendArmStates( np.asarray(pr), np.asarray(vr), 'state-right' )
+            interloper.sendHandStates( hl, 0, 'gripperstate-left' )
+            interloper.sendHandStates( hr, 0, 'gripperstate-right' )
+            
             
             # Check if bimanual information was received
             [status,framesize]  = bimanual_chan.get( bimanual_msg, wait=False, last=True )
@@ -161,6 +171,24 @@ class Updater:
                 
                 # Clean after yourself
                 bimanual_chan.flush()
+            
+            # Check if bimanual_hand info has been received
+            [status,framesize]  = bimanual_hand_chan.get( bimanual_hand_msg, wait=False, last=True )
+            if status == ach.ACH_OK or status == ach.ACH_MISSED_FRAME :
+                (hand_pos_left, mode, hand_pos_right) = interloper.readGatekeeperHandMsg(bimanual_hand_msg) 
+                print "Mode python: ", mode
+	        if mode == 0 :
+		   print "Moving hand left ", hand_pos_left, " and right: ", hand_pos_right
+                   self._hands['left'].command_position( hand_pos_left, False, 5.0)
+                   rospy.sleep(2.0)
+                   interloper.sendGatekeeperMsg( "left_gripper", 1, "gatekeeper_msg_chan" )
+
+		if mode == 1 :
+		  print "Right hand not ON"
+                
+                # Clean after yourself
+                bimanual_hand_chan.flush()
+            
 
             # Send these as sns_msg_state 
             control_rate.sleep()
@@ -179,11 +207,10 @@ class Updater:
         print "Trajectory ", _limb," has ", len(_msg.points)
         for p in _msg.points:
             traj.add_point( p.positions, (p.time_from_start).to_sec() )
-
         traj.start()
-        traj.wait(15.0)
+        traj.wait(30.0)
         print "Finished following trajectory for arm: ", _limb
-        interloper.sendGatekeeperMsg_arm( _limb, 1, "gatekeeper_msg_chan" )
+        interloper.sendGatekeeperMsg( _limb, 1, "gatekeeper_msg_chan" )
 
 
 

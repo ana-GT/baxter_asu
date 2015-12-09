@@ -31,10 +31,10 @@ std::string getMsg( const std::list<Eigen::VectorXd> &_path,
 		    double _maxAccel, double _freq );
 
 /**
- * @function sendGatekeeperMsg_arm
+ * @function sendGatekeeperMsg
  * @brief Return the status (true or false) after executing trajectory
  */
-static PyObject* sendGatekeeperMsg_arm( PyObject* self, PyObject* args ) {
+static PyObject* sendGatekeeperMsg( PyObject* self, PyObject* args ) {
   char* limb; int res; char* chan_name;
   if( !PyArg_ParseTuple( args, "sis", &limb, &res, &chan_name ) ) {
     return NULL;
@@ -55,9 +55,10 @@ static PyObject* sendGatekeeperMsg_arm( PyObject* self, PyObject* args ) {
   gatekeeper_msg msg;
   sns_msg_header_fill( &msg.header );
 
-  std::cout << "Limb: "<< limb << std::endl;
   if( strcmp( limb,"left") == 0 ) { printf("Reply to left arm \n"); msg.type = ARM_LEFT_END; }
   else if( strcmp(limb,"right") == 0 ) { printf("Reply to right arm \n"); msg.type = ARM_RIGHT_END; }
+  else if( strcmp(limb,"left_gripper") == 0 ) { printf("Reply to left gripper \n"); msg.type = HAND_LEFT_END; }
+  else if( strcmp(limb,"right_gripper") == 0 ) { printf("Reply to right gripper \n"); msg.type = HAND_RIGHT_END; }
 
   msg.state = res;
   r = ach_put( &gatekeeper_msg_chan,
@@ -133,6 +134,53 @@ static PyObject* readGatekeeperMsg( PyObject* self, PyObject* args ) {
 
   return Py_BuildValue("(s#is#)", str_msg[0].c_str(), str_msg[0].size(), mode, str_msg[1].c_str(), str_msg[1].size() );
 }
+
+/**
+ * @brief readGatekeeperHandMsg
+ */
+static PyObject* readGatekeeperHandMsg( PyObject* self, PyObject* args ) {
+
+  PyObject* gt_obj;
+  Py_buffer gt_view;
+  void* buf;
+  double left_pos = 0; double right_pos = 0;
+
+  if( !PyArg_ParseTuple( args, "O", &gt_obj ) ) {
+    return NULL;
+  }
+
+  if( PyObject_GetBuffer( gt_obj, &gt_view, PyBUF_SIMPLE ) ) {
+    printf("Error getting buffer \n");
+    return NULL;
+  } 
+  
+  buf = gt_view.buf;
+  struct sns_msg_bimanual *msg = (struct sns_msg_bimanual*) buf;
+  // Read
+  int n_dofs, n_steps_left, n_steps_right, mode;
+  n_dofs = msg->n_dof;
+
+  // Left
+  n_steps_left = msg->n_steps_left;
+  n_steps_right = msg->n_steps_right;
+  mode = msg->mode;
+
+  // LEFT POS
+  if( mode == 0 ) {
+
+    // Hack: If closing (left_pos < 100.0), go smaller
+    left_pos = msg->x[0]; 
+    if( left_pos < 95.0 ) { left_pos *= 0.25; }
+  } 
+  // RIGHT POS
+  else if( mode == 1 ) {
+    right_pos = msg->x[0];
+  } 
+
+  return Py_BuildValue("(fif)", left_pos, mode, right_pos );
+}
+
+
 
 /**
  * @function getMsg
@@ -251,12 +299,58 @@ static PyObject* sendArmStates( PyObject* self, PyObject* args ) {
   return Py_BuildValue("i", r );
 }
 
+/**
+ * @function sendHandStates
+ * @brief Send hand state (position and velocity through channel)
+ * @brief Arguments: position of gripper, velocities array, channel_name
+ */
+static PyObject* sendHandStates( PyObject* self, PyObject* args ) {
+
+  float q,dq;
+  const char* chan_name;
+
+  if( !PyArg_ParseTuple( args, "ffs", &q, &dq, &chan_name ) ) {
+    return NULL;
+  }
+
+  int N =  1;
+
+  // Send state message
+  ach_channel_t state_chan;
+  enum ach_status r;
+  
+  // Open / start the communication
+  r = ach_open( &state_chan, chan_name, NULL );  
+  if( r != ACH_OK ) { 
+    printf("ERROR: Opening %s - code: %s errno: %s \n", chan_name, ach_result_to_string(r), strerror(errno)  ); 
+    return NULL; 
+  }
+  //printf("Sending %s: %f and %f \n", chan_name, q, dq);
+  sns_msg_motor_state* msg = sns_msg_motor_state_local_alloc(N);
+  msg->mode = SNS_MOTOR_MODE_POS; // HOW TO READ THIS?
+  msg->header.n = N;
+
+
+  for( int i = 0; i < N; ++i ) {
+    msg->X[i].pos = q;
+    msg->X[i].vel = dq;
+  }
+  
+  r = ach_put( &state_chan, msg, sns_msg_motor_state_size_n((uint32_t)N) );
+  
+  ach_close( &state_chan );
+  return Py_BuildValue("i", r );
+}
+
+
 // Declare the methods
 static PyMethodDef InterloperMethods[] = {
-    {"sendArmStates", sendArmStates, METH_VARARGS, "Send motor states to simulator"},
-    {"readGatekeeperMsg", readGatekeeperMsg, METH_VARARGS, "Read gatekeeper messages"},
-    {"sendGatekeeperMsg_arm", sendGatekeeperMsg_arm, METH_VARARGS, "Send msg to planner letting it know how the traj went"},
-    {NULL,NULL,0,NULL}
+  {"sendArmStates", sendArmStates, METH_VARARGS, "Send motor states to simulator"},
+  {"sendHandStates", sendHandStates, METH_VARARGS, "Send hand states to simulator"},
+  {"readGatekeeperMsg", readGatekeeperMsg, METH_VARARGS, "Read gatekeeper messages"},
+  {"readGatekeeperHandMsg", readGatekeeperHandMsg, METH_VARARGS, "Read gatekeeper hand messages"},
+  {"sendGatekeeperMsg", sendGatekeeperMsg, METH_VARARGS, "Send msg to planner letting it know how the traj went"},
+  {NULL,NULL,0,NULL}
 };
 
 
